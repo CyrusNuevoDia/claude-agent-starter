@@ -1,6 +1,11 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "extends": ["ultracite/biome/core"],
+  "files": {
+    // Vendored third-party code (e.g. skill-bundled @std/csv) keeps its
+    // upstream style.
+    "includes": ["**", "!**/vendor/**"]
+  },
   "linter": {
     "rules": {
       "suspicious": {
