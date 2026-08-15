@@ -16,4 +16,4 @@ Slack; the specialists are available to you as tools.
 
 ## Specialists
 
-(None yet — `/managed-agent-deploy` appends one line per deployed agent.)
+- `foia` — dispatch FOIA case-sourcing batches for Origin Media: finding, grading, and portal-resolving bodycam-worthy arrest cases from news coverage (never request submission or invoice payment).

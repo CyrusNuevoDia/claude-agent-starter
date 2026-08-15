@@ -1,0 +1,49 @@
+{
+  "compiled_hashes": {
+    "managed/foia/CLAUDE.md": "7fec4bf3ec2babf4e49936e4d51c333b01c079981305ebd1a1bb4f357bb929ad",
+    "managed/foia/tools.ts": "de96a95b82d90644590da59ed37e5693c5a7011b1d76d2d8a1f8372af2d2801a",
+    "managed/foia/acl.ts": "875ea44d5b3aba026a3da7ff10bd3f3b2ea74534a090344e730e4a63854dfae5",
+    "agent/tools/foia.ts": "31b3ce9f2286d04d3c79f058ec961ebfe6efc774b9fe953a7951e3cc3f480aa8",
+    "managed/foia/.claude/skills/find-cases/SKILL.md": "f3f8a408ddf5d5f27c099e83296b8dd84e946b150017bd2317d5f3eb3d9202e4",
+    "managed/foia/.claude/skills/find-cases/findall.ts": "da9c889180eb85957b76b9bc18023878803446886ae75775be5803afa817267f",
+    "managed/foia/.claude/skills/grade-case/SKILL.md": "7968db3d9257b6e2e97073bd6e89163d6bf40c60a3bbd712425fb7ee6524994d",
+    "managed/foia/.claude/skills/grade-case/rubric.md": "e18628a42b63ed1ce1f3919912f80af70409a2f0efcc69d64cfddb3689dae2b9",
+    "managed/foia/.claude/skills/grade-case/score.ts": "a2e43b08a5fe2c165998819f3769aed22522f7a6372b7623d8d43b0a66950e69",
+    "managed/foia/.claude/skills/lookup-portal/SKILL.md": "3e2e3b50b01db115703d345fbb7f8a84e9a71b5d299e8e014ecfaf7939e515f4",
+    "managed/foia/.claude/skills/lookup-portal/seed-portal-map.ts": "04772f4c6412ada97a09f5790b0e2a0c9bc3e189377cf4757752af6efa77f9a2",
+    "managed/foia/.claude/skills/lookup-portal/portal-map.json": "70340082a0a35a1fa91aa05dcb3c9ac3c51c45aaebaa9c1fc45f4073dc6547d9"
+  },
+  "description": "Sources and qualifies bodycam-worthy police cases for Origin Media's FOIA pipeline: discovers arrest incidents in news coverage, grades them against the case rubric, resolves records-request portals, and emits scored rows for human approval. Never submits requests or pays invoices.",
+  "invocation": "message",
+  "memory": {
+    "access": "read_write",
+    "description": "Department knowledge only: the authoritative department-to-portal map, sharded by state under portal-map/<state-slug>.json, plus small per-fact notes about departments and portal vendors. Holds no case data and no article content."
+  },
+  "model": "claude-sonnet-5",
+  "name": "foia",
+  "session_policy": "fresh",
+  "deployment": {
+    "agent_id": "agent_012cEEn23azLnUCWbNcoB3a8",
+    "agent_version": 1,
+    "skills": {
+      "find-cases": {
+        "hash": "23472dfbcfe6c020ceb1d98282f7c408215853a27687d484de070e82b8396f77",
+        "skill_id": "skill_014CFbMrvTLt19qzYESPRcio",
+        "version": "1786748493388683"
+      },
+      "grade-case": {
+        "hash": "921686c41eec00dee141f4d1415aba68485538523159d8e899fd7a06d0c3b991",
+        "skill_id": "skill_01YKu2KVyrbX5MPt7nxdW8gA",
+        "version": "1786748493364297"
+      },
+      "lookup-department-portal": {
+        "hash": "8538c939dcbb5cd9e0b484683ae63fda59e8d1b1602f457210cc419fd7e64140",
+        "skill_id": "skill_019z3KBhg3iQFFnxts5wDF7P",
+        "version": "1786748493366976"
+      }
+    },
+    "system_hash": "7fec4bf3ec2babf4e49936e4d51c333b01c079981305ebd1a1bb4f357bb929ad",
+    "tools_hash": "e8ad60da487acf693f8ff0da2072bb72e768cbe0f1a21b8d8a2caf67ba1c6892",
+    "memory_store_id": "memstore_019xtPNtJmAQjSzFTA2ytHeo"
+  }
+}
