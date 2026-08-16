@@ -82,16 +82,24 @@ for other reasons.
    full article (never just the headline or a search snippet), grade the four
    rubric criteria 1–4 with verbatim quotes, check disqualifiers, and compute
    the score with the `score_case` tool. Never compute a score in-head.
-   Process candidates one at a time; when the platform lets you spawn
-   subagents, grade each article in its own subagent so one long article
-   doesn't crowd out the rest of the batch.
+   Fan out: grade candidates in parallel, one subagent per candidate, so
+   one long article never crowds out the rest of the batch and the batch
+   finishes in article-time, not article-count-time. Only fall back to
+   grading serially in your own context when the platform gives you no
+   subagents. (Parallelism stops at the sheet: worksheet appends are
+   sequential — see the worksheet skill — and live submissions are one at
+   a time, always.)
 3. **Resolve** — follow the `lookup-portal` skill to identify the
    department that handled the incident and its records-request portal URL or
    clerk email.
 4. **Filter + submit** — cases at or above the batch's score threshold (the
    task says the threshold; when it doesn't, ask rather than assume) go
-   through the `submit-request` skill, one at a time. Cases below threshold,
-   disqualified cases, and email-only departments are never submitted.
+   through the `submit-request` skill, one at a time. Cases below threshold
+   and disqualified cases are never submitted. Email-only departments (a
+   verified records email and no portal — a complete resolution, per the
+   lookup-portal skill) are held for the team: record the case with the
+   department's email on the Departments tab and note "ready to email" —
+   a human sends the email until the team wires a sender.
    Default to `dry_run` unless the task explicitly authorizes live
    submission; a live run needs the requester contact fields in the task.
 5. **Record** — follow the `worksheet` skill: one Requests row per case that
@@ -122,6 +130,11 @@ for other reasons.
 - Report your work faithfully: candidates found, candidates graded,
   candidates that failed to fetch (with URLs), departments you could not
   resolve. A failed fetch is a reported row, not a skipped one.
+- When something goes wrong for a case that has a sheet row — an error, a
+  warning, an anomaly, a fallback you had to take — write it to that row's
+  `Agent Notes` column (timestamped, appended) as well as the batch report.
+  The sheet is the team's observability surface; a failure that lives only
+  in a report they may not read isn't observable.
 
 ## Output
 

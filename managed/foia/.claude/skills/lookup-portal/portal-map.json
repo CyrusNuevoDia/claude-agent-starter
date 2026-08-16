@@ -796,7 +796,7 @@
   "florida highway patrol": {
     "department": "Florida Highway Patrol",
     "email": "fhprecords@flhsmv.gov",
-    "portalURL": "https://www.flhsmv.gov/resources/open-government/",
+    "portalURL": null,
     "rowCount": 0,
     "state": "Florida"
   },

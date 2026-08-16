@@ -86,3 +86,12 @@ store the portal's base and note it.
   records page. Sweep: department site nav ("Records", "Public Records",
   "Transparency"), county clerk site, then state-level portals — before
   falling back to a clerk email, and only then report unresolved.
+- **Email-only is a complete resolution, not a failure.** Some agencies
+  (Florida Highway Patrol, observed live: its flhsmv.gov "open government"
+  page accepts no requests and names a mail custodian only) take requests
+  exclusively by email. Store the entry with the verified records email and
+  `portalURL: null` — never keep a landing page that accepts no requests as
+  the portalURL just to fill the field; that's an eviction. An email-only
+  entry means the email path is how this department gets requests
+  (submission handling for those cases is the pipeline's call, not this
+  skill's).

@@ -129,7 +129,8 @@ submission record JSON below.
   invent identity values to get past a form.
 - **CAPTCHAs: let the browser agent solve them.** Browser Use cloud runs
   with stealth on by default, which includes CAPTCHA solving — a CAPTCHA on
-  the form is not itself a blocker. Instruct the browser agent to complete
+  the form, whatever the flavor (reCAPTCHA, BotDetect image challenges,
+  hCaptcha), is not itself a blocker and never a reason to skip a portal. Instruct the browser agent to complete
   it as part of the fill; only a *failed* solve (agent reports it couldn't
   complete the challenge after attempts) becomes `blocked: captcha`. Record
   the captcha type and outcome in the portal map's `submission` object so
