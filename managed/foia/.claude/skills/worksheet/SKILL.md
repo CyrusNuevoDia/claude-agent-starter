@@ -13,12 +13,19 @@ schema encodes:
 - **One row per request for its whole life.** Status changes; the row never
   moves or gets copied to another tab.
 - **One type and meaning per field.** Invoice is a bare number, links each
-  have their own column, everything else overflows into Notes.
+  have their own column, everything else overflows into Notes — except
+  agent-side errors and warnings, which go in Agent Notes.
 - **Statuses are a strict vocabulary** (dropdown-enforced, validated by the
   script): `Sourced → Submitted → Invoiced → Paid → Received → Downloaded`,
   dead ends `Denied | No Record | Withdrawn`.
 - **Request IDs are `YYYY-NNNNNNNN`** (8-digit counter), assigned by
   `append-request` — never by you.
+- **`Score` never appears without `Rubric`.** The Rubric cell shows where
+  the number came from: one line per criterion in grading order —
+  `narrative_arc 4/4: "<the verbatim evidence quote>"` — then one
+  `DQ <id>: "<evidence>"` line per disqualifier (so a 0 explains itself).
+  Build it from the exact grade JSON that went to score.ts; same quotes,
+  no summarizing. Newlines separate lines within the cell.
 
 ## Operations
 
@@ -52,6 +59,15 @@ facts surface, and the Departments/Batches tabs. **`Paid` and
 `Status: Paid` are Henry's** — record invoices, never payments — until the
 team explicitly ships auto-pay to you. Humans also write `Notes` freely;
 append to Notes, don't replace what a human wrote.
+
+**`Agent Notes` is yours alone, and it's where things go when they go
+wrong.** Errors, warnings, and anomalies for that request live there —
+failed fetches and the fallback used, identity ambiguity, a portal that
+moved or errored, a submission that ended `unconfirmed`, a status you
+believe is wrong but won't write backward, a sheet write that failed
+partway. Timestamp-prefix each entry (`2026-08-16: …`) and append — never
+overwrite earlier entries. Keep `Notes` for approver-facing context;
+"shit hit the fan" goes in Agent Notes so humans can filter on it.
 
 ## Failure modes — read before writing
 

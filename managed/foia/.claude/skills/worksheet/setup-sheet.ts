@@ -120,21 +120,23 @@ const widths: [number, number][] = [
   [4, 110], // Incident Date
   [5, 230], // Department
   [6, 60], // Score
-  [7, 110], // Submitted
-  [8, 150], // Reference #
-  [9, 95], // Invoice
-  [10, 110], // Paid
-  [11, 200], // Video
-  [12, 260], // Notes
-  [13, 340], // Description
-  [14, 220], // Charges
-  [15, 200], // Article
-  [16, 200], // Portal
-  [17, 110], // Access Code
-  [18, 200], // Invoice Link
-  [19, 130], // Batch
-  [20, 125], // Request ID
-  [21, 110], // Updated
+  [7, 360], // Rubric
+  [8, 110], // Submitted
+  [9, 150], // Reference #
+  [10, 95], // Invoice
+  [11, 110], // Paid
+  [12, 200], // Video
+  [13, 260], // Notes
+  [14, 240], // Agent Notes
+  [15, 340], // Description
+  [16, 220], // Charges
+  [17, 200], // Article
+  [18, 200], // Portal
+  [19, 110], // Access Code
+  [20, 200], // Invoice Link
+  [21, 130], // Batch
+  [22, 125], // Request ID
+  [23, 110], // Updated
 ];
 
 await api(":batchUpdate", "POST", {
@@ -206,11 +208,11 @@ await api(":batchUpdate", "POST", {
     },
     // Typed columns: dates, score, currency
     columnFormat(4, { pattern: "yyyy-mm-dd", type: "DATE" }), // Incident Date
-    columnFormat(7, { pattern: "yyyy-mm-dd", type: "DATE" }), // Submitted
+    columnFormat(8, { pattern: "yyyy-mm-dd", type: "DATE" }), // Submitted
     columnFormat(6, { pattern: "0", type: "NUMBER" }), // Score
-    columnFormat(9, { pattern: "$#,##0.00", type: "CURRENCY" }), // Invoice
-    columnFormat(10, { pattern: "yyyy-mm-dd", type: "DATE" }), // Paid
-    columnFormat(21, { pattern: "yyyy-mm-dd", type: "DATE" }), // Updated
+    columnFormat(10, { pattern: "$#,##0.00", type: "CURRENCY" }), // Invoice
+    columnFormat(11, { pattern: "yyyy-mm-dd", type: "DATE" }), // Paid
+    columnFormat(23, { pattern: "yyyy-mm-dd", type: "DATE" }), // Updated
     // Row tinting by status
     ...STATUSES.map((status, i) => ({
       addConditionalFormatRule: {
