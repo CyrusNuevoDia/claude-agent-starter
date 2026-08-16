@@ -14,6 +14,8 @@
 // Validation failures exit 1 with the reason on stderr — fix the grader
 // output and rerun; never hand-compute a score around a validation error.
 
+import { file, stdin } from "bun";
+
 const CRITERIA = [
   "narrative_arc",
   "charge_severity",
@@ -25,14 +27,16 @@ const DISQUALIFIERS = new Set([
   "no_jurisdiction",
   "case_open",
   "unusable_footage",
+  "drug_related",
+  "not_traffic_stop",
+  "nighttime",
+  "immediate_arrest",
 ]);
 
 function fail(msg: string): never {
   console.error(`invalid grader output: ${msg}`);
   process.exit(1);
 }
-
-import { file, stdin } from "bun";
 
 const raw = process.argv[2]
   ? await file(process.argv[2]).text()
@@ -41,19 +45,22 @@ const raw = process.argv[2]
 let input: unknown;
 try {
   input = JSON.parse(raw);
-} catch (e) {
-  fail(`not JSON (${e})`);
+} catch (error) {
+  fail(`not JSON (${error})`);
 }
 if (typeof input !== "object" || input === null) {
   fail("top level must be an object");
 }
+// SAFETY: the guard above exited unless `input` is a non-null object.
 const { grades, disqualifiers } = input as Record<string, unknown>;
 
 if (typeof grades !== "object" || grades === null) {
   fail("missing 'grades' object");
 }
+// SAFETY: the guard above exited unless `grades` is a non-null object.
 const gradeMap = grades as Record<string, unknown>;
 for (const key of Object.keys(gradeMap)) {
+  // SAFETY: widening the literal tuple to check membership of an arbitrary key.
   if (!(CRITERIA as readonly string[]).includes(key)) {
     fail(`unknown criterion '${key}'`);
   }
@@ -65,7 +72,10 @@ for (const criterion of CRITERIA) {
   if (typeof entry !== "object" || entry === null) {
     fail(`missing criterion '${criterion}'`);
   }
+  // SAFETY: the guard above exited unless `entry` is a non-null object.
   const { grade, evidence } = entry as Record<string, unknown>;
+  // SAFETY: Number.isInteger established `grade` is a number before both
+  // range comparisons.
   if (
     !Number.isInteger(grade) ||
     (grade as number) < 1 ||
@@ -78,6 +88,7 @@ for (const criterion of CRITERIA) {
   if (typeof evidence !== "string" || evidence.trim().length < 5) {
     fail(`'${criterion}'.evidence must be a verbatim quote (min 5 chars)`);
   }
+  // SAFETY: the range check above exited unless `grade` is an integer 1-4.
   sum += grade as number;
 }
 
@@ -88,6 +99,7 @@ for (const d of disqualifiers) {
   if (typeof d !== "object" || d === null) {
     fail("each disqualifier must be an object");
   }
+  // SAFETY: the guard above exited unless `d` is a non-null object.
   const { id, evidence } = d as Record<string, unknown>;
   if (typeof id !== "string" || !DISQUALIFIERS.has(id)) {
     fail(`unknown disqualifier id ${JSON.stringify(id)}`);

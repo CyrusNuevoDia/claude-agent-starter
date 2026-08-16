@@ -15,8 +15,11 @@ Output: the grades/disqualifiers JSON plus the `{ score }` from `score.ts`.
    report the candidate as a fetch failure — do not grade from snippets.
 2. Read `rubric.md` (in this skill's directory). Grade the four criteria
    against its level definitions, copying a verbatim quote for each grade.
-3. Check the three disqualifiers, each with verbatim evidence (for
-   `no_jurisdiction`, a one-line statement of what's missing is acceptable).
+3. Check every disqualifier the rubric lists, each with verbatim evidence
+   (for `no_jurisdiction` and `not_traffic_stop`, a one-line statement of
+   what's missing is acceptable). Note the `nighttime` exception rule — an
+   INSANE, demonstrably well-lit nighttime case is kept, with the exception
+   recorded in notes.
 4. Write the JSON to a file and run:
    `bun <this-skill-dir>/score.ts grades.json`
    The single line it prints — `{"score": N}` — is the case's score.
@@ -39,6 +42,11 @@ Output: the grades/disqualifiers JSON plus the `{ score }` from `score.ts`.
   arrest scores 4–6; it is NOT disqualified. Disqualifiers are structural (no
   agency to file against, case still open, footage shown but unwatchable) —
   never a synonym for "bad case". Low scores rank to the bottom on their own.
+- **Missing `drug_related` on stops that turned into busts.** The team's rule
+  is absolute — "ABSOLUTELY NO DRUG RELATED ARRESTS" — and the common miss is
+  a routine traffic stop where the search found narcotics. Scan the charges
+  list for possession/trafficking before grading anything else; a
+  high-scoring pursuit still zeroes if drugs were part of the arrest.
 - **Missing `case_open` on recent incidents.** Local news reports arrests
   within days, long before cases close. Phrases like "charges are pending",
   "the investigation remains active/ongoing", "detectives are still
