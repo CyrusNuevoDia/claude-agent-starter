@@ -262,7 +262,7 @@ const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 export async function runTask(opts: RunTaskOptions): Promise<RunTaskResult> {
   const run = streamTask(opts);
   for (;;) {
-    // biome-ignore lint/performance/noAwaitInLoops: draining a generator is inherently sequential
+    // oxlint-disable-next-line no-await-in-loop -- draining a generator is inherently sequential
     const next = await run.next();
     if (next.done) {
       return next.value;
@@ -276,6 +276,8 @@ export async function runTask(opts: RunTaskOptions): Promise<RunTaskResult> {
  * `RunTaskResult`. This is what the eve tool wrappers consume from their
  * `async *execute` so intermediate results stream to clients as
  * `action.partial` events.
+ *
+ * @yields {TaskProgress} Cumulative progress snapshots (last write wins).
  */
 export async function* streamTask(
   opts: RunTaskOptions
@@ -435,17 +437,22 @@ async function* consumeUntilEndTurn(args: {
 /** Human-readable label for a progress snapshot; undefined = nothing to show. */
 function activityFor(event: KnownEvent): string | undefined {
   switch (event.type) {
-    case "agent.message":
+    case "agent.message": {
       return "agent message";
-    case "agent.custom_tool_use":
+    }
+    case "agent.custom_tool_use": {
       return `custom tool: ${event.name}`;
+    }
     case "agent.tool_use":
-    case "agent.mcp_tool_use":
+    case "agent.mcp_tool_use": {
       return "tool use";
-    case "span.outcome_evaluation_end":
+    }
+    case "span.outcome_evaluation_end": {
       return `outcome evaluated: ${event.result}`;
-    default:
-      return;
+    }
+    default: {
+      return undefined;
+    }
   }
 }
 
