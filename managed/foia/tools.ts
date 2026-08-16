@@ -5,6 +5,10 @@ import { join } from "node:path";
 
 import type { CustomToolSpec } from "@/lib/claude-managed-agent.ts";
 
+// Validates this agent's env requirements at load time (fail fast, not
+// mid-batch); the spawned skill scripts inherit the loaded process.env.
+import "./env.ts";
+
 // Handlers run in *this* process (repo checkout; bun auto-loads .env for the
 // spawned scripts) and shell out to the exact scripts the prototype
 // exercised — the deployed sandbox has neither the API keys nor these
@@ -15,12 +19,15 @@ const FINDALL = "managed/foia/.claude/skills/find-cases/findall.ts";
 const SCORE = "managed/foia/.claude/skills/grade-case/score.ts";
 const BROWSER_TASK =
   "managed/foia/.claude/skills/submit-request/browser-task.ts";
+const WORKSHEET = "managed/foia/.claude/skills/worksheet/worksheet.ts";
 
 function runScript(
   script: string,
   args: string[],
   stdinText?: string
 ): Promise<string> {
+  // spawn is callback-based, so the promise has to be constructed here.
+  // oxlint-disable-next-line promise/avoid-new
   return new Promise((resolve) => {
     const proc = spawn("bun", [script, ...args], {
       cwd: REPO_ROOT,
@@ -61,7 +68,9 @@ async function runWithBodyFile(
   try {
     return await runScript(script, [subcommand, path]);
   } finally {
-    await unlink(path).catch(() => undefined);
+    await unlink(path).catch(() => {
+      // The body file is scratch; a failed cleanup must not fail the tool.
+    });
   }
 }
 
@@ -132,7 +141,7 @@ export const tools: CustomToolSpec[] = [
   },
   {
     description:
-      "Operate Browser Use cloud browser-agent runs for the submit-request skill. op=run takes a raw v4 RunCreateRequest body (task text, model, maxCostUsd — always set maxCostUsd) and returns a run id; op=status polls; op=get returns the full run with its result; op=events returns the step-by-step browser actions (read these before trusting any dry_run or after any ambiguous live run); op=cancel stops a run. Portal submissions only, per the submit-request skill's modes and no-double-submission rule.",
+      "Operate Browser Use cloud browser-agent runs for the submit-request skill. op=run takes a raw v4 RunCreateRequest body (task text, model, maxCostUsd — always set maxCostUsd) and returns a run id; op=status polls; op=get returns the full run with its result; op=events returns the step-by-step browser actions (read these before trusting any dry_run or after any ambiguous live run); op=cancel stops a run. Task text may reference {{PORTAL_LOGIN_EMAIL}}/{{PORTAL_LOGIN_PASSWORD}} — the script substitutes the real standing-identity credentials from the environment at send time; never put literal credentials in the task text. Portal submissions only, per the submit-request skill's modes and no-double-submission rule.",
     handler: (input) => {
       if (input.op === "run") {
         return runWithBodyFile(BROWSER_TASK, "run", input.body);
@@ -159,6 +168,58 @@ export const tools: CustomToolSpec[] = [
       type: "object",
     },
     name: "browser_submit_run",
+  },
+  {
+    description:
+      'Typed operations on the team\'s FOIA tracking spreadsheet (Requests/Departments/Batches), per the worksheet skill. op=overview lists tabs; op=read pages a tab (args: tab, offset, limit); op=find matches Requests rows by field equality (body = the query); op=append-request adds a request row (assigns the Request ID — never invent one); op=update-request patches a row (body carries "Request ID" + changed fields); op=upsert-department mirrors a resolved department; op=append-batch records a sourcing run. One JSON line back; {"error": ...} means fix the input and retry, never work around validation.',
+    handler: (input) => {
+      if (input.op === "overview") {
+        return runScript(WORKSHEET, ["overview"]);
+      }
+      if (input.op === "read") {
+        return runScript(WORKSHEET, [
+          "read",
+          String(input.tab ?? "Requests"),
+          String(input.offset ?? 0),
+          String(input.limit ?? 100),
+        ]);
+      }
+      return runWithBodyFile(WORKSHEET, String(input.op), input.body);
+    },
+    input_schema: {
+      properties: {
+        body: {
+          description:
+            "For find/append-request/update-request/upsert-department/append-batch: the operation's JSON body, fields keyed by exact column header.",
+          type: "object",
+        },
+        limit: {
+          description: "For op=read: max rows (default 100).",
+          type: "number",
+        },
+        offset: { description: "For op=read: rows to skip.", type: "number" },
+        op: {
+          enum: [
+            "overview",
+            "read",
+            "find",
+            "append-request",
+            "update-request",
+            "upsert-department",
+            "append-batch",
+          ],
+          type: "string",
+        },
+        tab: {
+          description:
+            "For op=read: Requests (default), Departments, or Batches.",
+          type: "string",
+        },
+      },
+      required: ["op"],
+      type: "object",
+    },
+    name: "worksheet_run",
   },
   {
     description:

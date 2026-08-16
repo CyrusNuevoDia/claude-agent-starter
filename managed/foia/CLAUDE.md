@@ -15,9 +15,13 @@ records-requests for cases that clear the batch's score threshold (via the
 `submit-request` skill), and output scored rows with their submission
 records.
 
-You do **not**: create portal accounts, pay or approve invoices, send email
-requests or follow-ups to departments, or deduplicate against Origin's
-existing request sheet or competitor channels. (Form CAPTCHAs are solved as
+You do **not**: pay or approve invoices, send email requests or follow-ups
+to departments, or deduplicate against Origin's existing request sheet or
+competitor channels. When a portal requires an account, you sign in — or
+register — with Origin's standing portal identity via the
+`{{PORTAL_LOGIN_EMAIL}}`/`{{PORTAL_LOGIN_PASSWORD}}` placeholders the
+submit-request skill describes; never write the literal credential values
+into task text, output rows, or memory. (Form CAPTCHAs are solved as
 part of a normal portal fill — the browser platform handles them; a failed
 solve is reported, never worked around by other means.) Humans gate
 the money: every invoice decision is Henry's. If a task arrives asking you
@@ -37,6 +41,8 @@ scripts with the right credentials. Translate as follows, always:
 - `bun score.ts` on grader JSON → `score_case`
 - `bun browser-task.ts run|get|status|events|cancel` (submit-request skill) →
   `browser_submit_run` with `op` set accordingly
+- `bun worksheet.ts <op>` (worksheet skill) → `worksheet_run` with `op` set
+  accordingly
 
 Everything else in the skills (reading skill files like `rubric.md` and
 `portal-map.json`, writing notes, assembling output) you do with your
@@ -88,7 +94,13 @@ for other reasons.
    disqualified cases, and email-only departments are never submitted.
    Default to `dry_run` unless the task explicitly authorizes live
    submission; a live run needs the requester contact fields in the task.
-5. **Emit** — output every graded candidate, including score-0 ones, sorted
+5. **Record** — follow the `worksheet` skill: one Requests row per case that
+   was submitted or attempted (`Sourced` for above-threshold cases held back,
+   `Submitted`/`Denied` etc. as the outcome dictates), department upserts for
+   newly resolved portals, and one Batches row whose counts match the batch
+   report. Below-threshold and disqualified candidates get no sheet row —
+   they live in the batch report and the Batches counts.
+6. **Emit** — output every graded candidate, including score-0 ones, sorted
    by score descending, each with its submission record (or the reason none
    was attempted). Disqualified and low-scoring rows are part of the
    deliverable: they prove coverage and stop the same case being re-sourced.
@@ -120,7 +132,7 @@ then one JSON object per line (JSONL) for every candidate:
 BATCH: <states>, incidents <date window>
 Candidates discovered: <n>   Graded: <n>   Fetch failures: <n>   Unresolved departments: <n>
 
-{"suspect": "<full name or 'unnamed'>", "title": "<article headline>", "cityState": "<City, State>", "articleURL": "<url>", "description": "<3-6 sentence factual summary built only from quoted/labeled article content>", "charges": "<charges as stated, semicolon-separated>", "incidentDate": "<as stated in article>", "department": "<canonical department name>", "portalURL": "<records-request URL or null>", "departmentEmail": "<clerk email or null>", "score": <0-16>, "grades": {"narrative_arc": {"grade": <1-4>, "evidence": "<verbatim quote>"}, "charge_severity": {"grade": <1-4>, "evidence": "<verbatim quote>"}, "action_intensity": {"grade": <1-4>, "evidence": "<verbatim quote>"}, "bodycam_evidence": {"grade": <1-4>, "evidence": "<verbatim quote>"}}, "disqualifiers": [{"id": "<no_jurisdiction|case_open|unusable_footage>", "evidence": "<verbatim quote or one-line statement of what's missing>"}], "submission": <the submit-request output record for submitted/attempted cases, or {"status": "not_attempted", "reason": "<below threshold | disqualified | email-only | no portal>"}>, "notes": "<anything the approver must know: identity ambiguity, department uncertainty, fetch fallbacks used — or empty string>"}
+{"suspect": "<full name or 'unnamed'>", "title": "<article headline>", "cityState": "<City, State>", "articleURL": "<url>", "description": "<3-6 sentence factual summary built only from quoted/labeled article content>", "charges": "<charges as stated, semicolon-separated>", "incidentDate": "<as stated in article>", "department": "<canonical department name>", "portalURL": "<records-request URL or null>", "departmentEmail": "<clerk email or null>", "score": <0-16>, "grades": {"narrative_arc": {"grade": <1-4>, "evidence": "<verbatim quote>"}, "charge_severity": {"grade": <1-4>, "evidence": "<verbatim quote>"}, "action_intensity": {"grade": <1-4>, "evidence": "<verbatim quote>"}, "bodycam_evidence": {"grade": <1-4>, "evidence": "<verbatim quote>"}}, "disqualifiers": [{"id": "<no_jurisdiction|case_open|unusable_footage|drug_related|not_traffic_stop|nighttime|immediate_arrest>", "evidence": "<verbatim quote or one-line statement of what's missing>"}], "submission": <the submit-request output record for submitted/attempted cases, or {"status": "not_attempted", "reason": "<below threshold | disqualified | email-only | no portal>"}>, "notes": "<anything the approver must know: identity ambiguity, department uncertainty, fetch fallbacks used — or empty string>"}
 ```
 
 The `description`, `charges`, `incidentDate`, and `department` fields feed the
@@ -153,3 +165,6 @@ Every item below is checkable; a batch missing any of them is not done:
 - Every row has a `submission` object; `submitted` appears only with a
   verbatim confirmation/reference number, and no case was submitted live
   twice or below threshold.
+- Every submitted/attempted case has a Requests row in the tracking sheet
+  with a script-assigned Request ID, and the batch's Batches row carries the
+  same counts as the summary block.
