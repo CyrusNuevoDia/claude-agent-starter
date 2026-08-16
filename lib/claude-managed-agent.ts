@@ -15,11 +15,12 @@
  */
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+
 import Anthropic from "@anthropic-ai/sdk";
-import dotenvx from "@dotenvx/dotenvx";
 import { z } from "zod";
+
+import { env, repoRoot } from "./env.ts";
 
 // ---------------------------------------------------------------------------
 // Schemas + types shared with managed agent dirs
@@ -200,11 +201,7 @@ type KnownEvent = z.infer<typeof KnownEvent>;
 // ---------------------------------------------------------------------------
 
 export function makeClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY is not set (see .env.example)");
-  }
-  return new Anthropic({ apiKey });
+  return new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 }
 
 const SHARED_ENVIRONMENT_NAME = "mvp-shared";
@@ -220,10 +217,13 @@ export async function getOrCreateEnvironment(
   if (cachedEnvironmentId) {
     return cachedEnvironmentId;
   }
-  for await (const env of client.beta.environments.list()) {
-    if (env.name === SHARED_ENVIRONMENT_NAME && env.archived_at === null) {
-      cachedEnvironmentId = env.id;
-      return env.id;
+  for await (const environment of client.beta.environments.list()) {
+    if (
+      environment.name === SHARED_ENVIRONMENT_NAME &&
+      environment.archived_at === null
+    ) {
+      cachedEnvironmentId = environment.id;
+      return environment.id;
     }
   }
   const created = await client.beta.environments.create({
@@ -241,8 +241,8 @@ export async function getOrCreateEnvironment(
  */
 function titleSnippet(task: string, maxLen = 60): string {
   const collapsed = task
-    .replace(/[\p{Cc}\p{Cf}]+/gu, " ")
-    .replace(/\s+/g, " ")
+    .replaceAll(/[\p{Cc}\p{Cf}]+/gu, " ")
+    .replaceAll(/\s+/gu, " ")
     .trim();
   return collapsed.length > maxLen
     ? `${collapsed.slice(0, maxLen - 1)}…`
@@ -465,23 +465,27 @@ function trackEvent(event: KnownEvent, state: StreamState): void {
       }
       break;
     }
-    case "agent.custom_tool_use":
+    case "agent.custom_tool_use": {
       state.pendingToolUses.set(event.id, {
         input: event.input,
         name: event.name,
       });
       break;
+    }
     case "agent.tool_use":
-    case "agent.mcp_tool_use":
+    case "agent.mcp_tool_use": {
       if (event.evaluated_permission === "ask") {
         state.pendingPermissionAsks.add(event.id);
       }
       break;
-    case "span.outcome_evaluation_end":
+    }
+    case "span.outcome_evaluation_end": {
       state.outcome = { explanation: event.explanation, result: event.result };
       break;
-    default:
+    }
+    default: {
       break;
+    }
   }
 }
 
@@ -558,40 +562,6 @@ async function executeCustomTool(
 // Artifact loading (used by console.ts and the eve wrappers)
 // ---------------------------------------------------------------------------
 
-/**
- * The source-tree location works when running from tsx CLIs; when eve bundles
- * this module, import.meta.url points into the build output, so fall back to
- * walking up from cwd to the repo root (the dir holding managed/ + package.json).
- */
-function findRepoRoot(): string {
-  const fromSource = join(dirname(fileURLToPath(import.meta.url)), "..");
-  if (existsSync(join(fromSource, "managed"))) {
-    return fromSource;
-  }
-  let dir = process.cwd();
-  for (;;) {
-    if (
-      existsSync(join(dir, "managed")) &&
-      existsSync(join(dir, "package.json"))
-    ) {
-      return dir;
-    }
-    const parent = dirname(dir);
-    if (parent === dir) {
-      return fromSource;
-    }
-    dir = parent;
-  }
-}
-export const repoRoot = findRepoRoot();
-
-// Load the repo-root .env so the CLIs work right after `cp .env.example .env`.
-dotenvx.config({
-  ignore: ["MISSING_ENV_FILE"],
-  path: join(repoRoot, ".env"),
-  quiet: true,
-});
-
 export type ManagedAgent = {
   dir: string;
   instructions: string;
@@ -624,7 +594,7 @@ export async function loadManagedAgent(
     );
   }
   const parsed = AgentManifest.safeParse(
-    JSON.parse(await readFile(manifestPath, "utf8"))
+    JSON.parse(await readFile(manifestPath, "utf-8"))
   );
   if (!parsed.success) {
     throw new Error(
@@ -632,14 +602,16 @@ export async function loadManagedAgent(
     );
   }
   const manifest = parsed.data;
-  const instructions = await readFile(join(dir, "CLAUDE.md"), "utf8");
+  const instructions = await readFile(join(dir, "CLAUDE.md"), "utf-8");
   const rubricPath = join(dir, "rubric.md");
   const rubric = existsSync(rubricPath)
-    ? await readFile(rubricPath, "utf8")
+    ? await readFile(rubricPath, "utf-8")
     : undefined;
   let tools: CustomToolSpec[] = [];
   const toolsPath = join(dir, "tools.ts");
   if (!opts?.skipToolImport && existsSync(toolsPath)) {
+    // SAFETY: tools.ts is authored in this repo against CustomToolSpec and
+    // typechecked with it; a dynamic import can only be typed as `any`.
     const mod = (await import(toolsPath)) as { tools?: CustomToolSpec[] };
     tools = mod.tools ?? [];
   }
