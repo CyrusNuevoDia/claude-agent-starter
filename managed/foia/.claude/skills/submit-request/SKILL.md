@@ -1,6 +1,6 @@
 ---
 name: submit-request
-description: Submit one qualified case's public-records request through the department's online portal by driving a Browser Use cloud browser agent, and capture the portal's confirmation/reference number. Portal submissions only — it does not pay invoices, respond to department follow-ups, create portal accounts, or send email requests (email-only departments are reported as skipped, not submitted).
+description: Submit one qualified case's public-records request through the department's online portal by driving a Browser Use cloud browser agent, registering or signing in with Origin's standing portal identity when the portal requires an account, and capture the portal's confirmation/reference number. Portal submissions only — it does not pay invoices, respond to department follow-ups, or send email requests (email-only departments are reported as skipped, not submitted).
 ---
 
 # submit-request
@@ -55,7 +55,7 @@ submission record JSON below.
 ## Output record
 
 ```
-{"caseSuspect": "...", "department": "...", "portalURL": "...", "mode": "dry_run|live", "status": "submitted|dry_run_ok|blocked|skipped_email_only|unconfirmed|failed", "referenceNumber": "<verbatim from confirmation page, or null>", "confirmationQuote": "<verbatim page text, or null>", "blockers": ["account_required|captcha|payment_upfront|form_not_found|..."], "browserRunId": "...", "costUsd": <from the run object>, "notes": "..."}
+{"caseSuspect": "...", "department": "...", "portalURL": "...", "mode": "dry_run|live", "status": "submitted|dry_run_ok|blocked|skipped_email_only|unconfirmed|failed", "referenceNumber": "<verbatim from confirmation page, or null>", "confirmationQuote": "<verbatim page text, or null>", "blockers": ["account_required|captcha|payment_upfront|form_not_found|..."], "browserRunId": "...", "costUsd": <from the run object>, "accountCreated": <true only when this run registered a new portal account, else omit>, "notes": "..."}
 ```
 
 ## Vendor notes — observed by live recon during prototyping
@@ -112,10 +112,21 @@ submission record JSON below.
   sometimes helpfully submit it. The no-submit instruction must be the
   loudest line in the task text, and after a dry run, check `events` for
   submit-shaped clicks before trusting `dry_run_ok`.
-- **Account walls.** Many GovQA tenants require registration before showing
-  the form. That is a `blocked: account_required` result, not an invitation
-  to create an account — account strategy (shared credentials, per-portal
-  registration, Browser Use profiles) is a human decision not yet made.
+- **Account walls: register or sign in with the standing identity.** Many
+  GovQA tenants require registration before showing the form. Use Origin's
+  standing portal identity: write the literal placeholders
+  `{{PORTAL_LOGIN_EMAIL}}` and `{{PORTAL_LOGIN_PASSWORD}}` in the browser
+  task text (browser-task.ts substitutes the real credentials from the
+  environment at send time — never paste literal credentials into task text,
+  files, or output). Instruct the browser agent to try signing in first and
+  register only if the account doesn't exist; record `accountCreated: true`
+  in the submission record when a new registration happened, and persist
+  `accountRequired: true` (plus whether an account now exists) into the
+  portal map's `submission` object so the next run signs in instead of
+  re-registering. A registration that demands fields beyond
+  email/password/requester contact (e.g. verified phone, physical address
+  when Origin provided none) is still `blocked: account_required` — never
+  invent identity values to get past a form.
 - **CAPTCHAs: let the browser agent solve them.** Browser Use cloud runs
   with stealth on by default, which includes CAPTCHA solving — a CAPTCHA on
   the form is not itself a blocker. Instruct the browser agent to complete

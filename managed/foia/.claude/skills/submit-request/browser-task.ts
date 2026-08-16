@@ -36,29 +36,55 @@ async function call(path: string, method: string, body?: unknown) {
   console.log(text);
 }
 
+// Standing portal identity: task text uses {{PORTAL_LOGIN_EMAIL}} /
+// {{PORTAL_LOGIN_PASSWORD}} placeholders so the literal credentials never
+// appear in skill files, transcripts, or run bodies at rest — they're
+// substituted here from the environment at send time.
+function injectPortalIdentity(task: string): string {
+  return task.replaceAll(
+    /\{\{(?<name>PORTAL_LOGIN_EMAIL|PORTAL_LOGIN_PASSWORD)\}\}/gu,
+    (_, name) => {
+      const value = process.env[name];
+      if (!value) {
+        console.error(`task references {{${name}}} but ${name} is not set`);
+        process.exit(1);
+      }
+      return value;
+    }
+  );
+}
+
 const [cmd, arg] = process.argv.slice(2);
 
 switch (cmd) {
   case "run": {
     const body = await file(arg).json();
+    if (typeof body.task === "string") {
+      body.task = injectPortalIdentity(body.task);
+    }
     await call("/runs", "POST", body);
     break;
   }
-  case "get":
+  case "get": {
     await call(`/runs/${arg}`, "GET");
     break;
-  case "status":
+  }
+  case "status": {
     await call(`/runs/${arg}/status`, "GET");
     break;
-  case "events":
+  }
+  case "events": {
     await call(`/runs/${arg}/events`, "GET");
     break;
-  case "cancel":
+  }
+  case "cancel": {
     await call(`/runs/${arg}/cancel`, "POST");
     break;
-  default:
+  }
+  default: {
     console.error(
       "usage: bun browser-task.ts run|get|status|events|cancel <arg>"
     );
     process.exit(1);
+  }
 }
