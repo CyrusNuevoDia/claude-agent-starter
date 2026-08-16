@@ -17,12 +17,11 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+
 import { toFile } from "@anthropic-ai/sdk";
-import {
-  type AgentManifest,
-  loadManagedAgent,
-  makeClient,
-} from "@/lib/claude-managed-agent.ts";
+
+import { loadManagedAgent, makeClient } from "@/lib/claude-managed-agent.ts";
+import type { AgentManifest } from "@/lib/claude-managed-agent.ts";
 
 const [name] = process.argv.slice(2);
 if (!name) {
@@ -126,6 +125,8 @@ for (const known of Object.keys(deployment.skills)) {
     console.log(
       `skill ${known}: removed from artifact (leaving uploaded skill in workspace)`
     );
+    // The manifest is round-tripped back to disk, so the key has to go away.
+    // oxlint-disable-next-line typescript/no-dynamic-delete
     delete deployment.skills[known];
   }
 }
@@ -136,6 +137,8 @@ const agentConfig = {
   description: manifest.description,
   // "permission" is compile-time metadata for the toolset mapping below — the
   // API's mcp_servers entries only accept {type, name, url}.
+  // SAFETY: `permission` is stripped just above, leaving exactly the
+  // {type, name, url} the API accepts; the SDK types this field as never[].
   mcp_servers: mcpServers.map(
     ({ permission: _permission, ...server }) => server
   ) as never[],
@@ -165,6 +168,8 @@ const agentConfig = {
     })),
     ...tools.map((tool) => ({
       description: tool.description,
+      // SAFETY: every tools.ts declares input_schema as a JSON Schema object;
+      // CustomToolSpec types it loosely so agent dirs can spell out any shape.
       input_schema: tool.input_schema as {
         type: "object";
         [key: string]: unknown;
@@ -236,7 +241,7 @@ async function persistManifest(): Promise<void> {
   manifest.deployment = deployment;
   const manifestPath = join(dir, "manifest.json");
   const nextManifest = `${JSON.stringify(manifest, null, 2)}\n`;
-  if (nextManifest === (await readFile(manifestPath, "utf8"))) {
+  if (nextManifest === (await readFile(manifestPath, "utf-8"))) {
     console.log(`manifest unchanged: managed/${name}/manifest.json`);
   } else {
     await writeFile(manifestPath, nextManifest);
@@ -247,9 +252,11 @@ async function persistManifest(): Promise<void> {
 // --- helpers --------------------------------------------------------------
 
 async function hashDir(root: string): Promise<string> {
-  const files = (
-    await readdir(root, { recursive: true, withFileTypes: true })
-  ).filter((entry) => entry.isFile());
+  const dirEntries = await readdir(root, {
+    recursive: true,
+    withFileTypes: true,
+  });
+  const files = dirEntries.filter((entry) => entry.isFile());
   const entries = await Promise.all(
     files.map(async (entry) => {
       const path = join(entry.parentPath, entry.name);

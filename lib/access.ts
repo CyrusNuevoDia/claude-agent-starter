@@ -34,7 +34,7 @@ import type { DynamicResolveContext } from "eve/tools";
 
 export type ACL = { public: true } | { principals: string[] };
 
-// TODO(fork): derive your caller id from the authenticated session.
+// Fork point: derive your caller id from the authenticated session.
 function resolvePrincipal(ctx: DynamicResolveContext): string | undefined {
   return ctx.session.auth.current?.principalId;
 }

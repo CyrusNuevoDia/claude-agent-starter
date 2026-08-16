@@ -4,6 +4,7 @@
 // at runtime the agent treats its memory copy of the map as authoritative.
 
 import { file, write } from "bun";
+
 import { parse } from "./vendor/std-csv/parse.js";
 
 // Canonical key for a department name. Must match the normalization rules
@@ -11,21 +12,21 @@ import { parse } from "./vendor/std-csv/parse.js";
 // abbreviations, no trailing punctuation.
 export function normalizeDepartment(name: string): string {
   return name
-    .replace(/[‘’ʼ]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/\s+/g, " ")
+    .replaceAll(/[‘’ʼ]/gu, "'")
+    .replaceAll(/[“”]/gu, '"')
+    .replaceAll(/\s+/gu, " ")
     .trim()
     .toLowerCase()
-    .replace(/\bpd\b/g, "police department")
-    .replace(/\bso\b/g, "sheriff's office")
-    .replace(/\bdept\.?\b/g, "department")
-    .replace(/[.\s]+$/g, "");
+    .replaceAll(/\bpd\b/gu, "police department")
+    .replaceAll(/\bso\b/gu, "sheriff's office")
+    .replaceAll(/\bdept\.?\b/gu, "department")
+    .replaceAll(/[.\s]+$/gu, "");
 }
 
 // Some sheet cells contain a URL with a second URL-encoded URL glued on.
-const ENCODED_URL_RE = /https?%3A%2F%2F/i;
+const ENCODED_URL_RE = /https?%3A%2F%2F/iu;
 // GovQA embeds an ASP.NET session segment /(S(...))/ in the path.
-const GOVQA_SESSION_RE = /\/\(S\([^)]*\)\)/gi;
+const GOVQA_SESSION_RE = /\/\(S\([^)]*\)\)/giu;
 
 // Strip per-session state from portal URLs so the cached URL is stable.
 export function cleanPortalURL(raw: string): string | null {
@@ -66,10 +67,14 @@ type Group = {
   rowCount: number;
 };
 
-const CURLY_APOSTROPHE_RE = /[‘’ʼ]/g;
+const CURLY_APOSTROPHE_RE = /[‘’ʼ]/gu;
 
 const bump = (m: Map<string, number>, k: string) =>
   m.set(k, (m.get(k) ?? 0) + 1);
+
+// The most frequent value in a tally, or null when the tally is empty.
+const top = (m: Map<string, number>) =>
+  [...m.entries()].toSorted((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
 function accumulate(
   g: Group,
@@ -107,7 +112,7 @@ async function main() {
   const deptIdx = header.indexOf("police department");
   const contactIdx = header.indexOf("email");
   const cityIdx = header.indexOf("city and state");
-  if (deptIdx < 0 || contactIdx < 0) {
+  if (deptIdx === -1 || contactIdx === -1) {
     console.error("missing 'police department' or 'email' column");
     process.exit(1);
   }
@@ -138,11 +143,8 @@ async function main() {
     );
   }
 
-  const top = (m: Map<string, number>) =>
-    [...m.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-
   const map: Record<string, Entry> = {};
-  for (const [key, g] of [...groups.entries()].sort()) {
+  for (const [key, g] of [...groups.entries()].toSorted()) {
     map[key] = {
       department: top(g.names) ?? key,
       email: top(g.emails),

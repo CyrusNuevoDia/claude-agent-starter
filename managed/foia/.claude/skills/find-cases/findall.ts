@@ -81,9 +81,10 @@ switch (cmd) {
     await call("https://api.exa.ai/contents", exaKey, "x-api-key", body);
     break;
   }
-  default:
+  default: {
     console.error(
       "usage: bun findall.ts create|status|result|exa-search|exa-contents <arg>"
     );
     process.exit(1);
+  }
 }

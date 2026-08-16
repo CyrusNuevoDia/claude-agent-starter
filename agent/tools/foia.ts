@@ -1,14 +1,14 @@
 import { defineState } from "eve/context";
 import { defineDynamic, defineTool } from "eve/tools";
+
 import { allowed } from "@/lib/access.ts";
 import { loadManagedAgent, runTask } from "@/lib/claude-managed-agent.ts";
 import { acl } from "@/managed/foia/acl.ts";
 import { tools } from "@/managed/foia/tools.ts";
 
-const sessionIdState = defineState<string | undefined>(
-  "foia-session",
-  () => undefined
-);
+const sessionIdState = defineState<string | undefined>("foia-session", () => {
+  // No managed-agent session exists until the first task runs.
+});
 
 export default defineDynamic({
   events: {

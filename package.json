@@ -1,18 +1,11 @@
 {
-  "dependencies": {
-    "@ai-sdk/anthropic": "^4.0.16",
-    "@anthropic-ai/sdk": "^0.112.4",
-    "@dotenvx/dotenvx": "^2.17.4",
-    "eve": "^0.26.1",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.5.3",
-    "@types/node": "^26.1.1",
-    "typescript": "^7.0.2",
-    "ultracite": "7.9.4"
-  },
   "name": "mvp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prototype agents in Claude Code, ship them on the Claude Developer Platform.",
+  "license": "MIT",
+  "author": "Cyrus Nouroozi",
+  "type": "module",
   "scripts": {
     "deploy": "bun scripts/deploy.ts",
     "console": "bun scripts/console.ts",
@@ -21,10 +14,21 @@
     "check": "ultracite check",
     "fix": "ultracite fix"
   },
-  "type": "module",
-  "version": "0.1.0",
-  "description": "Prototype agents in Claude Code, ship them on the Claude Developer Platform.",
-  "private": true,
-  "author": "Cyrus Nouroozi",
-  "license": "MIT"
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.16",
+    "@anthropic-ai/sdk": "^0.112.4",
+    "@dotenvx/dotenvx": "^2.17.4",
+    "@t3-oss/env-core": "^0.13.11",
+    "eve": "^0.26.1",
+    "google-auth-library": "^11.0.2",
+    "google-spreadsheet": "^5.3.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "typescript": "^7.0.2",
+    "ultracite": "^7.10.5"
+  }
 }

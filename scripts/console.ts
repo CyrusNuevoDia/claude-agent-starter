@@ -12,13 +12,14 @@
  * as an outcome description and run it against the agent's rubric.md.
  */
 import { spawn } from "node:child_process";
+
 import {
   getOrCreateEnvironment,
   loadManagedAgent,
   makeClient,
   runTask,
-  type SessionEvent,
 } from "@/lib/claude-managed-agent.ts";
+import type { SessionEvent } from "@/lib/claude-managed-agent.ts";
 
 const args = process.argv.slice(2);
 const [name] = args;
@@ -76,25 +77,31 @@ function renderEvent(event: SessionEvent) {
     return;
   }
   switch (event.type) {
-    case "session.status_running":
+    case "session.status_running": {
       console.error("  · running…");
       break;
-    case "agent.tool_use":
+    }
+    case "agent.tool_use": {
       console.error(`  · tool: ${String(event.name ?? "?")}`);
       break;
-    case "agent.custom_tool_use":
+    }
+    case "agent.custom_tool_use": {
       console.error(
         `  · custom tool: ${String(event.name ?? "?")} ${JSON.stringify(event.input ?? {})}`
       );
       break;
-    case "span.outcome_evaluation_start":
+    }
+    case "span.outcome_evaluation_start": {
       console.error(`  · grader: iteration ${String(event.iteration)}`);
       break;
-    case "span.outcome_evaluation_end":
+    }
+    case "span.outcome_evaluation_end": {
       console.error(`  · grader: ${String(event.result)}`);
       break;
-    default:
+    }
+    default: {
       break;
+    }
   }
 }
 
